@@ -1,0 +1,41 @@
+{
+  "_note": "Presets, bands and optimizer limits are the team's own design choices, NOT official bank policy. Optimized scenarios are illustrative and not approved by any bank.",
+  "pressureBands": { "low": 1.5, "moderate": 1.0 },
+  "resilienceBands": { "strong": 0.3, "moderate": 0.1 },
+
+  "presets": [
+    {
+      "id": "sales_drop_20",
+      "name": "Sales drop 20%",
+      "changes": { "revenueChange": -0.2 }
+    },
+    {
+      "id": "costs_up_10",
+      "name": "Costs rise 10%",
+      "changes": { "costChange": 0.1 }
+    },
+    {
+      "id": "rate_plus_2",
+      "name": "Interest rate +2 points",
+      "changes": { "rateChange": 0.02 }
+    },
+    {
+      "id": "delay_6",
+      "name": "Expansion delayed 6 months",
+      "changes": { "delayMonths": 6, "revenueChange": "expectedGrowth" }
+    },
+    {
+      "id": "combined",
+      "name": "Sales -10% and costs +5%",
+      "changes": { "revenueChange": -0.1, "costChange": 0.05 }
+    }
+  ],
+
+  "optimizer": {
+    "defaultTargetDscr": 1.25,
+    "maxTermYears": 7,
+    "cashShareLimit": 0.5,
+    "minBufferMonths": 3,
+    "steps": 10
+  }
+}

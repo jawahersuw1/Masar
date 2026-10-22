@@ -1,0 +1,75 @@
+{
+  "_note": "Limits, weights and bands are the team's own design choices, NOT official bank policy. Risk is 0-100, higher = riskier. Not a credit score and not a repayment probability.",
+  "bands": { "high": 55, "medium": 30 },
+
+  "liquidity": {
+    "components": [
+      {
+        "key": "liquidityBuffer",
+        "label": "Cash buffer (months of installments)",
+        "weight": 0.7,
+        "worst": 0,
+        "best": 6,
+        "reason": "Spare cash pays installments if sales dip"
+      },
+      {
+        "key": "cashLeftPct",
+        "label": "Monthly cash left after installment (share of revenue)",
+        "weight": 0.3,
+        "worst": 0,
+        "best": 0.15,
+        "reason": "Money left each month after paying the installment"
+      }
+    ]
+  },
+
+  "financingPressure": {
+    "components": [
+      {
+        "key": "dscr",
+        "label": "Debt service coverage (DSCR)",
+        "weight": 0.4,
+        "worst": 0.8,
+        "best": 2.0,
+        "reason": "Shows if profit can pay the installment"
+      },
+      {
+        "key": "installmentToRevenue",
+        "label": "Installment as share of revenue",
+        "weight": 0.3,
+        "worst": 0.4,
+        "best": 0.05,
+        "reason": "A heavy installment leaves little room for other costs"
+      },
+      {
+        "key": "loanToAnnualRevenue",
+        "label": "Loan compared with yearly revenue",
+        "weight": 0.3,
+        "worst": 2.0,
+        "best": 0.25,
+        "reason": "A loan that is large compared with sales is harder to carry"
+      }
+    ]
+  },
+
+  "dataConfidence": {
+    "components": [
+      {
+        "key": "completeness",
+        "label": "Questionnaire completeness",
+        "weight": 0.6,
+        "worst": 40,
+        "best": 100,
+        "reason": "Unanswered questions mean less evidence"
+      },
+      {
+        "key": "closeCount",
+        "label": "Close historical cases found",
+        "weight": 0.4,
+        "worst": 0,
+        "best": 3,
+        "reason": "Few similar past cases means weak benchmarking"
+      }
+    ]
+  }
+}

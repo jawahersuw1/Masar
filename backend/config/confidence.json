@@ -1,0 +1,7 @@
+{
+  "_note": "Limits are the team's own design choices. Low confidence or low similarity ALWAYS forces human review (hard-coded in confidence.js, not switchable here).",
+  "highCompleteness": 80,
+  "lowCompleteness": 60,
+  "highClose": 3,
+  "lowClose": 2
+}

@@ -1,0 +1,99 @@
+{
+  "_note": "Weights, limits and labels are the team's own design choices, NOT official bank policy. Write the reason for each one in the project report.",
+  "bands": { "strong": 70, "moderate": 45 },
+
+  "business": {
+    "components": [
+      {
+        "key": "experience",
+        "label": "Owner experience (years)",
+        "weight": 0.45,
+        "worst": 0,
+        "best": 10,
+        "reason": "More years of experience lowers the chance of execution mistakes"
+      },
+      {
+        "key": "yearsOperating",
+        "label": "Years operating",
+        "weight": 0.4,
+        "worst": 0,
+        "best": 8,
+        "reason": "A longer track record shows the business survives"
+      },
+      {
+        "key": "expectedGrowth",
+        "label": "Expected growth",
+        "weight": 0.15,
+        "worst": 0,
+        "best": 0.15,
+        "reason": "Growth plans help, but owners are often optimistic, so the weight is low"
+      }
+    ]
+  },
+
+  "financial": {
+    "components": [
+      {
+        "key": "dscr",
+        "label": "Debt service coverage (DSCR)",
+        "weight": 0.4,
+        "worst": 0.8,
+        "best": 2.0,
+        "reason": "Shows if profit can pay the installment. 1.0 is the break-even point"
+      },
+      {
+        "key": "margin",
+        "label": "Profit margin",
+        "weight": 0.25,
+        "worst": 0.03,
+        "best": 0.25,
+        "reason": "Higher margin leaves more room for bad months"
+      },
+      {
+        "key": "contributionPct",
+        "label": "Owner contribution",
+        "weight": 0.2,
+        "worst": 0.05,
+        "best": 0.4,
+        "reason": "More owner money means the owner shares the risk"
+      },
+      {
+        "key": "safetyMargin",
+        "label": "Break-even safety margin",
+        "weight": 0.15,
+        "worst": 0,
+        "best": 0.5,
+        "reason": "How far sales can fall before profit stops covering the installment"
+      }
+    ]
+  },
+
+  "operational": {
+    "components": [
+      {
+        "key": "liquidityBuffer",
+        "label": "Cash buffer (months of installments)",
+        "weight": 0.45,
+        "worst": 0,
+        "best": 6,
+        "reason": "Spare cash keeps daily operations running when sales dip"
+      },
+      {
+        "key": "employees",
+        "label": "Number of employees",
+        "weight": 0.25,
+        "worst": 1,
+        "best": 10,
+        "reason": "A larger team means less dependence on one person"
+      },
+      {
+        "key": "yearsOperating",
+        "label": "Years operating",
+        "weight": 0.3,
+        "worst": 0,
+        "best": 5,
+        "reason": "Established routines make daily running smoother"
+      }
+    ]
+  }
+}

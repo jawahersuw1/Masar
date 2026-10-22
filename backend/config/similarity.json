@@ -1,0 +1,60 @@
+{
+  "_note": "Features, weights and limits are the team's own design choices, NOT official bank policy. Justify each one in the project report.",
+  "topK": 3,
+  "minCoverage": 0.5,
+  "closeThreshold": 0.8,
+  "levels": { "high": 0.8, "medium": 0.65 },
+  "matchingDiff": 0.1,
+  "differingDiff": 0.3,
+  "features": [
+    { "key": "sector", "type": "category", "label": "Sector", "weight": 0.1 },
+    {
+      "key": "margin",
+      "type": "number",
+      "label": "Profit margin",
+      "weight": 0.15,
+      "min": 0.03,
+      "max": 0.25
+    },
+    {
+      "key": "dscr",
+      "type": "number",
+      "label": "Debt service coverage",
+      "weight": 0.25,
+      "min": 0.5,
+      "max": 3.0
+    },
+    {
+      "key": "contributionPct",
+      "type": "number",
+      "label": "Owner contribution",
+      "weight": 0.15,
+      "min": 0,
+      "max": 0.6
+    },
+    {
+      "key": "yearsOperating",
+      "type": "number",
+      "label": "Years operating",
+      "weight": 0.1,
+      "min": 0,
+      "max": 15
+    },
+    {
+      "key": "monthlyRevenue",
+      "type": "log",
+      "label": "Business size (revenue)",
+      "weight": 0.15,
+      "min": 20000,
+      "max": 12000000
+    },
+    {
+      "key": "liquidityBuffer",
+      "type": "number",
+      "label": "Cash buffer (months)",
+      "weight": 0.1,
+      "min": 0,
+      "max": 12
+    }
+  ]
+}

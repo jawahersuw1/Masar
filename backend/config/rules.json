@@ -1,0 +1,122 @@
+[
+  {
+    "id": "R1",
+    "name": "Low debt service coverage",
+    "severity": "high",
+    "metric": "dscr",
+    "op": "<",
+    "limitFromBank": "minDscr",
+    "format": "num",
+    "message": "DSCR is {value}, {bank} requires at least {limit}"
+  },
+
+  {
+    "id": "R2",
+    "name": "Profit does not cover the installment",
+    "severity": "high",
+    "metric": "dscr",
+    "op": "<",
+    "limit": 1.0,
+    "format": "num",
+    "message": "DSCR is {value}, below 1.0: monthly profit cannot pay the installment"
+  },
+
+  {
+    "id": "R3",
+    "name": "Low owner contribution",
+    "severity": "medium",
+    "metric": "contributionPct",
+    "op": "<",
+    "limitFromBank": "minContributionPct",
+    "format": "pct",
+    "message": "Owner pays {value} of the project, {bank} requires at least {limit}"
+  },
+
+  {
+    "id": "R4",
+    "name": "Low data completeness",
+    "severity": "mandatory_review",
+    "metric": "completeness",
+    "op": "<",
+    "limitFromBank": "minCompleteness",
+    "format": "points",
+    "message": "Only {value} of the questionnaire was answered, {bank} requires at least {limit}"
+  },
+
+  {
+    "id": "R5",
+    "name": "Young business",
+    "severity": "medium",
+    "metric": "yearsOperating",
+    "op": "<",
+    "limitFromBank": "minYearsOperating",
+    "format": "plain",
+    "message": "Business is {value} years old, {bank} requires at least {limit}"
+  },
+
+  {
+    "id": "R6",
+    "name": "Repayment period too long",
+    "severity": "medium",
+    "metric": "termYears",
+    "op": ">",
+    "limitFromBank": "maxTermYears",
+    "format": "plain",
+    "message": "Requested term is {value} years, {bank} allows at most {limit}"
+  },
+
+  {
+    "id": "R7",
+    "name": "Loan below bank minimum",
+    "severity": "low",
+    "metric": "loanAmount",
+    "op": "<",
+    "limitFromBank": "minLoan",
+    "format": "money",
+    "message": "Loan of {value} SAR is below the {bank} minimum of {limit} SAR"
+  },
+
+  {
+    "id": "R8",
+    "name": "Loan above bank maximum",
+    "severity": "low",
+    "metric": "loanAmount",
+    "op": ">",
+    "limitFromBank": "maxLoan",
+    "format": "money",
+    "message": "Loan of {value} SAR is above the {bank} maximum of {limit} SAR"
+  },
+
+  {
+    "id": "R9",
+    "name": "Sector needs extra care",
+    "severity": "medium",
+    "metric": "sector",
+    "op": "inList",
+    "limitFromBank": "cautionSectorIds",
+    "format": "plain",
+    "message": "{bank} is careful with this sector"
+  },
+
+  {
+    "id": "R10",
+    "name": "Low cash buffer",
+    "severity": "medium",
+    "metric": "liquidityBuffer",
+    "op": "<",
+    "limit": 3,
+    "format": "num",
+    "message": "Cash covers only {value} months of installments (below 3)"
+  },
+
+  {
+    "id": "R11",
+    "name": "Mandatory human review",
+    "severity": "mandatory_review",
+    "metric": "mandatoryReview",
+    "op": "==",
+    "limit": true,
+    "format": "plain",
+    "message": "Low similarity or low confidence: a reviewer must check this case"
+  }
+]
