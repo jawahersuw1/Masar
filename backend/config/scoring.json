@@ -95,5 +95,9 @@
         "reason": "Established routines make daily running smoother"
       }
     ]
+  },
+    "readiness": {
+    "weights": { "business": 0.25, "financial": 0.50, "operational": 0.25 },
+    "reason": "Money matters most for financing readiness, so the financial score counts double. Team choice, not bank policy."
   }
 }

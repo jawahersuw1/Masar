@@ -4,7 +4,7 @@ import { bandFor } from "./scoring.js";
 
 export function calcReadiness(feasibility, confidence, scoringConfig) {
   console.log(scoringConfig.readiness)
-  const weights = 1//scoringConfig.readiness.weights;
+  const weights = scoringConfig.readiness.weights;
   const used = Object.keys(weights).filter((k) => feasibility[k].score !== null);
   const totalW = used.reduce((s, k) => s + weights[k], 0);
   const score = totalW === 0 ? null : used.reduce((s, k) => s + weights[k] * feasibility[k].score, 0) / totalW;
@@ -12,7 +12,7 @@ export function calcReadiness(feasibility, confidence, scoringConfig) {
   return {
     score,
     band: bandFor(score, scoringConfig.bands),
-    confidence: confidence.level,                        // how much to trust the score
+    confidence: confidence.level,                       
     areasUsed: used,
     strengths: Object.keys(weights).flatMap((k) => feasibility[k].strengths),
     concerns: Object.keys(weights).flatMap((k) => feasibility[k].concerns),
