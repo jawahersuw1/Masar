@@ -73,7 +73,7 @@ async function createApplication({ clientUserId, bankId, inputs, completeness, r
 
 function applicationFromRow(a, inputsRow) {
   return {
-    id: a.id, clientUserId: a.client_user_id, bankId: a.bank_id, status: a.status,
+    id: a.id, clientUserId: a.client_user_id, clientName: a.client_name, bankId: a.bank_id, status: a.status,
     completenessPct: a.completeness_pct, createdAt: a.created_at, updatedAt: a.updated_at,
     results: a.results_json ? JSON.parse(a.results_json) : null,
     inputs: inputsFromRow(inputsRow)
@@ -81,19 +81,35 @@ function applicationFromRow(a, inputsRow) {
 }
 
 async function getApplication(id) {
-  const [apps] = await pool.query("SELECT * FROM applications WHERE id = ?", [id]);
+  const [apps] = await pool.query(
+    `SELECT a.*, u.name AS client_name FROM applications a JOIN users u ON u.id = a.client_user_id WHERE a.id = ?`, [id]);
   if (!apps[0]) return null;
   const [inputs] = await pool.query("SELECT * FROM application_inputs WHERE application_id = ?", [id]);
   return applicationFromRow(apps[0], inputs[0]);
 }
 
+// The inbox list: one row per application, with a small summary taken from the saved analysis.
 async function listApplicationsForBank(bankId) {
   const [rows] = await pool.query(
-    `SELECT a.id, a.client_user_id, u.name AS client_name, a.status, a.completeness_pct, a.created_at
-     FROM applications a JOIN users u ON u.id = a.client_user_id
+    `SELECT a.id, u.name AS client_name, a.status, a.completeness_pct, a.created_at, a.results_json,
+            i.loan_amount, s.name AS sector
+     FROM applications a
+     JOIN users u ON u.id = a.client_user_id
+     LEFT JOIN application_inputs i ON i.application_id = a.id
+     LEFT JOIN sectors s ON s.sector_id = i.sector_id
      WHERE a.bank_id = ? ORDER BY a.created_at DESC, a.id DESC`, [bankId]);
-  return rows.map((r) => ({ id: r.id, clientName: r.client_name, status: r.status,
-    completenessPct: r.completeness_pct, createdAt: r.created_at }));
+  return rows.map((r) => {
+    const results = r.results_json ? JSON.parse(r.results_json) : null;
+    const risk = results?.bank?.risk?.overall;
+    return {
+      id: r.id, clientName: r.client_name, status: r.status, completenessPct: r.completeness_pct, createdAt: r.created_at,
+      sector: r.sector ?? null,
+      loanAmount: r.loan_amount === null ? null : Number(r.loan_amount),
+      mandatoryReview: results?.bank?.mandatoryReview === true,
+      risk: risk ? { score: risk.risk, band: risk.band, provisional: risk.provisional } : null,
+      readiness: results?.readiness ? { score: results.readiness.score, band: results.readiness.band } : null
+    };
+  });
 }
 
 async function listApplicationsForClient(userId) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, FileText } from 'lucide-react';
 import AiExplanation from '../../components/ai/AiExplanation.jsx';
 import AreaScores from '../../components/analysis/AreaScores.jsx';
 import ConfidenceCard from '../../components/analysis/ConfidenceCard.jsx';
@@ -14,6 +14,7 @@ import ApplicantAnswers from '../../components/bank/ApplicantAnswers.jsx';
 import DecisionPanel from '../../components/bank/DecisionPanel.jsx';
 import RiskPanel from '../../components/bank/RiskPanel.jsx';
 import RulesPanel from '../../components/bank/RulesPanel.jsx';
+import Button from '../../components/ui/Button.jsx';
 import Card from '../../components/ui/Card.jsx';
 import { ErrorBlock, LoadingBlock, Notice } from '../../components/ui/Feedback.jsx';
 import Pill from '../../components/ui/Pill.jsx';
@@ -46,10 +47,11 @@ export default function Review() {
       <Link to="/bank" className="flex w-fit items-center gap-1 text-[12.5px] font-semibold text-steel hover:text-heading"><ChevronLeft className="h-4 w-4" aria-hidden="true" />Applications</Link>
       <Card className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-xl font-extrabold">Application #{a.id}{state?.clientName ? ` · ${state.clientName}` : ''}</h2>
+          <h2 className="font-display text-xl font-extrabold">Application #{a.id}{(a.clientName ?? state?.clientName) ? ` · ${a.clientName ?? state?.clientName}` : ''}</h2>
           <p className="mt-0.5 text-[12.5px] text-muted">Received {formatDate(a.createdAt)} · {bank?.name}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button as={Link} to={`/bank/applications/${a.id}/report`} variant="outline" size="sm"><FileText className="h-4 w-4" aria-hidden="true" />Combined report</Button>
           {bank?.mandatoryReview && <Pill tone="bad">Mandatory review</Pill>}
           <Pill tone={statusTone(a.status)}>{STATUS_LABEL[a.status] ?? a.status}</Pill>
         </div>

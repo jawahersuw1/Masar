@@ -1,4 +1,4 @@
-import { Home, ClipboardList, BarChart3, SlidersHorizontal, ShieldAlert, Wrench, Send, FolderOpen, Inbox } from 'lucide-react';
+import { Home, ClipboardList, BarChart3, SlidersHorizontal, ShieldAlert, Wrench, Send, FolderOpen, Inbox, Scale } from 'lucide-react';
 
 export const CLIENT_NAV = [
   { to: '/', label: 'Welcome', title: 'Welcome to Masar', icon: Home, end: true },
@@ -10,7 +10,10 @@ export const CLIENT_NAV = [
   { to: '/submit', label: 'Send to a bank', title: 'Send to a bank', icon: Send },
   { to: '/applications', label: 'My applications', title: 'My applications', icon: FolderOpen },
 ];
-export const BANK_NAV = [{ to: '/bank', label: 'Applications', title: 'Applications to review', icon: Inbox, end: true }];
+export const BANK_NAV = [
+  { to: '/bank', label: 'Applications', title: 'Applications to review', icon: Inbox, end: true },
+  { to: '/bank/settings', label: 'Bank rules', title: 'Bank rules', icon: Scale },
+];
 
 export function titleFor(pathname) {
   if (/^\/bank\/applications\//.test(pathname)) return 'Application review';

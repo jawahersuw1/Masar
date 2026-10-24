@@ -14,7 +14,7 @@ export default function Rail({ open, onClose }) {
   return (
     <>
       {open && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={onClose} aria-hidden="true" />}
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col gap-5 overflow-y-auto bg-navy p-3.5 pt-5 text-on-navy transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`print:hidden fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col gap-5 overflow-y-auto bg-navy p-3.5 pt-5 text-on-navy transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between gap-2.5 px-1.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gradient-to-br from-accent to-[#c96e17] font-display text-[15px] font-extrabold text-white">M</div>

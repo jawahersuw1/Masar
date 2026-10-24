@@ -13,7 +13,7 @@ export default function AppShell() {
       <Rail open={open} onClose={() => setOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenu={() => setOpen(true)} />
-        <main className="mx-auto w-full max-w-[1180px] flex-1 px-4 pb-24 pt-6 sm:px-7">
+        <main className="mx-auto w-full max-w-[1180px] flex-1 px-4 pb-24 pt-6 sm:px-7 print:max-w-none print:px-0 print:pb-0">
           <div key={pathname} className="animate-fade-up"><Outlet /></div>
         </main>
       </div>

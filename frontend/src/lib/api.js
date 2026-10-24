@@ -49,6 +49,8 @@ export const api = {
   explanation: (id) => request(`/api/applications/${id}/explanation`),
   // reviewer
   bankApplications: () => request('/api/bank/applications'),
+  bankSettings: () => request('/api/bank/settings'),
+  report: (id) => request(`/api/applications/${id}/report`),
   actions: (id) => request(`/api/applications/${id}/actions`),
   act: (id, action, comment) => request(`/api/applications/${id}/actions`, { method: 'POST', body: { action, comment } }),
 };

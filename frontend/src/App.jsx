@@ -4,7 +4,9 @@ import RequireRole, { RequireAuth } from './components/layout/RequireRole.jsx';
 import { AssessmentProvider } from './context/AssessmentContext.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Inbox from './pages/bank/Inbox.jsx';
+import Report from './pages/bank/Report.jsx';
 import Review from './pages/bank/Review.jsx';
+import Settings from './pages/bank/Settings.jsx';
 import Analysis from './pages/client/Analysis.jsx';
 import ApplicationDetail from './pages/client/ApplicationDetail.jsx';
 import Landing from './pages/client/Landing.jsx';
@@ -44,6 +46,8 @@ function Routed() {
           <Route element={<RequireRole role="reviewer" />}>
             <Route path="/bank" element={<Inbox />} />
             <Route path="/bank/applications/:id" element={<Review />} />
+            <Route path="/bank/applications/:id/report" element={<Report />} />
+            <Route path="/bank/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>

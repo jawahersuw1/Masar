@@ -55,7 +55,6 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
     const v = validateInputs(req.body?.inputs, await sectorIds());
     if (!v.ok) return res.status(400).json({ error: "Invalid inputs", details: v.errors });
     const cases = await repo.getCases();
-    console.log(cases)
     const analysis = analyzeApplication({ inputs: v.inputs, bank: null, cases, configs });
     res.json({ view: toClientView(analysis) });
   });
@@ -142,7 +141,7 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
       return res.json({ ...base, view: toClientView(application.results) });      // no reviewer comments
     }
     if (application.bankId !== req.user.bankId) return res.status(403).json({ error: "This application belongs to another bank" });
-    res.json({ ...base, inputs: application.inputs, view: toBankView(application.results),
+    res.json({ ...base, clientName: application.clientName, inputs: application.inputs, view: toBankView(application.results),
       actions: await repo.listActions(id) });
   });
 
@@ -178,12 +177,30 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
     if (!application) return res.status(404).json({ error: "Application not found" });
     if (application.bankId !== req.user.bankId) return res.status(403).json({ error: "This application belongs to another bank" });
     res.json({
-      application: { id: application.id, bankId: application.bankId, status: application.status, createdAt: application.createdAt },
+      application: { id: application.id, clientName: application.clientName, bankId: application.bankId, status: application.status, createdAt: application.createdAt },
       inputs: application.inputs,
       clientInsights: toClientView(application.results),            // what the SME owner saw
       bankDecisionSupport: toBankView(application.results),         // rules, risk and benchmarking for the reviewer
       explanation: await repo.getNarrative(id, "bank"),             // AI text, if it was already generated
       reviewerActions: await repo.listActions(id)
+    });
+  });
+
+  // ---------- the reviewer's own bank settings (read only) ----------
+  app.get("/api/bank/settings", auth, only("reviewer"), async (req, res) => {
+    const bank = await repo.getBank(req.user.bankId);
+    if (!bank) return res.status(404).json({ error: "Bank not found" });
+    const sectors = await repo.getSectors();
+    const nameOf = (id) => sectors.find((s) => s.sector_id === id)?.name ?? `Sector ${id}`;
+    res.json({
+      bankId: bank.bankId, name: bank.name, profile: bank.profileName,
+      thresholds: {
+        minDscr: bank.minDscr, minContributionPct: bank.minContributionPct, minCompleteness: bank.minCompleteness,
+        minYearsOperating: bank.minYearsOperating, maxTermYears: bank.maxTermYears, minLoan: bank.minLoan, maxLoan: bank.maxLoan
+      },
+      rateRange: { min: bank.rateMin, max: bank.rateMax },
+      riskWeights: bank.weights,
+      cautionSectors: bank.cautionSectorIds.map((id) => ({ id, name: nameOf(id) }))
     });
   });
 

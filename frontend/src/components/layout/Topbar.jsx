@@ -9,7 +9,7 @@ export default function Topbar({ onMenu }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-line-soft px-4 py-3.5 backdrop-blur sm:px-7"
+    <header className="print:hidden sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-line-soft px-4 py-3.5 backdrop-blur sm:px-7"
       style={{ background: 'color-mix(in srgb, var(--bg) 88%, transparent)' }}>
       <div className="flex items-center gap-3">
         <button type="button" onClick={onMenu} className="rounded-lg p-2 text-muted hover:bg-surface-2 lg:hidden" aria-label="Open menu"><Menu className="h-5 w-5" /></button>

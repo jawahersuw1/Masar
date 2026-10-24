@@ -13,7 +13,7 @@ export default function useCountUp(target, duration = 900) {
     const a = from.current;
     let raf;
     const tick = (now) => {
-      const p = Math.min(1, (now - start) / duration);
+      const p = Math.max(0, Math.min(1, (now - start) / duration));
       const eased = 1 - (1 - p) ** 3;
       const v = a + (target - a) * eased;
       from.current = v;
