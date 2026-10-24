@@ -26,5 +26,5 @@ try {
   console.error("Database NOT connected:", e.message);
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Masar API running on http://localhost:${PORT}`));
