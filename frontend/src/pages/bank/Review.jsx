@@ -12,6 +12,8 @@ import StressTests from '../../components/analysis/StressTests.jsx';
 import ActionHistory from '../../components/bank/ActionHistory.jsx';
 import ApplicantAnswers from '../../components/bank/ApplicantAnswers.jsx';
 import DecisionPanel from '../../components/bank/DecisionPanel.jsx';
+
+///22
 import RiskPanel from '../../components/bank/RiskPanel.jsx';
 import RulesPanel from '../../components/bank/RulesPanel.jsx';
 import Button from '../../components/ui/Button.jsx';
