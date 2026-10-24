@@ -16,7 +16,7 @@ const app = createApp({
   repo,
   configs: loadConfigs(),
   explain: makeExplainer({ generate }),
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173"   // the Vite dev server
+   corsOrigin: "*"
 });
 
 try {
