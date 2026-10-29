@@ -37,15 +37,53 @@ async function getCases() {
   return rows;
 }
 
-async function listUsers() {
-  const [rows] = await pool.query("SELECT id, name, role, bank_id FROM users ORDER BY id");
-  return rows.map((u) => ({ id: u.id, name: u.name, role: u.role, bankId: u.bank_id }));
+const userFromRow = (u) => ({ id: u.id, name: u.name, role: u.role, bankId: u.bank_id, email: u.email });
+
+// ---- accounts and sessions ----
+async function getUserByEmail(email) {
+  const [rows] = await pool.query(
+    "SELECT id, name, role, bank_id, email, password_hash FROM users WHERE email = ?", [email]);
+  return rows[0] ? { ...userFromRow(rows[0]), passwordHash: rows[0].password_hash } : null;
 }
 
-async function getUser(id) {
-  const [rows] = await pool.query("SELECT id, name, role, bank_id FROM users WHERE id = ?", [id]);
-  const u = rows[0];
-  return u ? { id: u.id, name: u.name, role: u.role, bankId: u.bank_id } : null;
+// Returns the new user, or null when the email is already used.
+async function createUser({ name, email, passwordHash, role, bankId }) {
+  try {
+    const [r] = await pool.query(
+      "INSERT INTO users (name, email, password_hash, role, bank_id) VALUES (?, ?, ?, ?, ?)",
+      [name, email, passwordHash, role, bankId ?? null]);
+    return { id: r.insertId, name, role, bankId: bankId ?? null, email };
+  } catch (e) {
+    if (e.code === "ER_DUP_ENTRY") return null;
+    throw e;
+  }
+}
+
+async function getBankCodeHash(bankId) {
+  const [rows] = await pool.query("SELECT access_code_hash FROM banks WHERE bank_id = ?", [bankId]);
+  return rows[0]?.access_code_hash ?? null;
+}
+
+async function createSession({ tokenHash, userId, days }) {
+  await pool.query(
+    "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))",
+    [tokenHash, userId, days]);
+}
+
+async function getUserBySession(tokenHash) {
+  const [rows] = await pool.query(
+    `SELECT u.id, u.name, u.role, u.bank_id, u.email
+     FROM sessions s JOIN users u ON u.id = s.user_id
+     WHERE s.token_hash = ? AND s.expires_at > NOW()`, [tokenHash]);
+  return rows[0] ? userFromRow(rows[0]) : null;
+}
+
+async function deleteSession(tokenHash) {
+  await pool.query("DELETE FROM sessions WHERE token_hash = ?", [tokenHash]);
+}
+
+async function deleteExpiredSessions() {
+  await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
 }
 
 async function createApplication({ clientUserId, bankId, inputs, completeness, results }) {
@@ -168,7 +206,8 @@ async function saveNarrative({ applicationId, audience, text, model }) {
 }
 
 export const repo = {
-  ping, getSectors, getBanks, getBank, getCases, listUsers, getUser,
+  ping, getSectors, getBanks, getBank, getCases,
+  getUserByEmail, createUser, getBankCodeHash, createSession, getUserBySession, deleteSession, deleteExpiredSessions,
   createApplication, getApplication, listApplicationsForBank, listApplicationsForClient,
   addReviewerAction, listActions, getNarrative, saveNarrative
 };

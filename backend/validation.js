@@ -73,3 +73,45 @@ export function validateChanges(raw) {
   }
   return { ok: errors.length === 0, errors, changes };
 }
+
+// ---- accounts ----
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function validateSignup(body, bankIds) {
+  const errors = [];
+  const b = body && typeof body === "object" ? body : {};
+
+  const role = b.role;
+  if (role !== "client" && role !== "reviewer") errors.push("Choose an account type: business owner or bank staff");
+
+  const name = typeof b.name === "string" ? b.name.trim() : "";
+  if (name.length < 2 || name.length > 80) errors.push("Name must be 2 to 80 characters");
+
+  const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
+  if (!EMAIL.test(email) || email.length > 190) errors.push("Enter a valid email address");
+
+  const password = typeof b.password === "string" ? b.password : "";
+  if (password.length < 8) errors.push("Password must be at least 8 characters");
+  if (password.length > 128) errors.push("Password is too long (at most 128 characters)");
+
+  let bankId = null;
+  let accessCode = "";
+  if (role === "reviewer") {
+    if (typeof b.bankId !== "string" || !bankIds.includes(b.bankId)) errors.push("Choose your bank");
+    else bankId = b.bankId;
+    accessCode = typeof b.accessCode === "string" ? b.accessCode.trim() : "";
+    if (!accessCode) errors.push("Enter your bank's staff code");
+  }
+  return { ok: errors.length === 0, errors, value: { role, name, email, password, bankId, accessCode } };
+}
+
+export function validateLogin(body) {
+  const b = body && typeof body === "object" ? body : {};
+  const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
+  const password = typeof b.password === "string" ? b.password : "";
+  const errors = [];
+  if (!email) errors.push("Enter your email");
+  if (!password) errors.push("Enter your password");
+  if (password.length > 128) errors.push("Email or password is wrong");
+  return { ok: errors.length === 0, errors, value: { email, password } };
+}

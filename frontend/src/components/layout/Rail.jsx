@@ -43,7 +43,7 @@ export default function Rail({ open, onClose }) {
               <div className="truncate text-[12.5px] font-bold text-white">{user.name}</div>
               <div>{isReviewer ? 'Bank reviewer' : 'Business owner'}</div>
             </div>
-            <button type="button" onClick={logout} aria-label="Switch user" title="Switch user" className="rounded-md p-1.5 hover:bg-white/10"><LogOut className="h-4 w-4" /></button>
+            <button type="button" onClick={logout} aria-label="Sign out" title="Sign out" className="rounded-md p-1.5 hover:bg-white/10"><LogOut className="h-4 w-4" /></button>
           </div>
           {isReviewer ? 'Decision support only. A person makes every decision.' : 'Guidance only. Not a credit score or a financing decision.'}
         </div>

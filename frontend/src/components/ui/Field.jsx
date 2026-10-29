@@ -10,6 +10,10 @@ export function Field({ label, hint, children }) {
   );
 }
 
+export function TextInput({ className = '', ...props }) {
+  return <input className={`${BASE} ${className}`} {...props} />;
+}
+
 export function NumberInput({ unit, className = '', ...props }) {
   return (
     <div className="relative">

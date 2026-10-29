@@ -1,9 +1,9 @@
 // One place for every backend call. Components never use fetch directly.
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 
-let currentUserId = null;
+let currentToken = null;
 let onUnauthorized = null;
-export const setApiUser = (id) => { currentUserId = id; };
+export const setApiToken = (token) => { currentToken = token; };
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn; };
 
 export class ApiError extends Error {
@@ -18,7 +18,7 @@ export class ApiError extends Error {
 async function request(path, { method = 'GET', body } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  if (currentUserId) headers['x-user-id'] = String(currentUserId); // demo auth, see backend README
+  if (currentToken) headers.Authorization = `Bearer ${currentToken}`;
 
   let res;
   try {
@@ -28,7 +28,7 @@ async function request(path, { method = 'GET', body } = {}) {
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    if (res.status === 401) onUnauthorized?.();
+    if (res.status === 401 && currentToken) onUnauthorized?.(); // the session ended
     throw new ApiError(res.status, data?.error ?? res.statusText ?? 'Request failed', data?.details);
   }
   return data;
@@ -38,7 +38,10 @@ export const api = {
   health: () => request('/api/health'),
   sectors: () => request('/api/sectors'),
   banks: () => request('/api/banks'),
-  users: () => request('/api/users'),
+  signup: (form) => request('/api/auth/signup', { method: 'POST', body: form }),
+  login: (email, password) => request('/api/auth/login', { method: 'POST', body: { email, password } }),
+  me: () => request('/api/auth/me'),
+  logout: () => request('/api/auth/logout', { method: 'POST' }),
   // client
   analyze: (inputs) => request('/api/analyze', { method: 'POST', body: { inputs } }),
   simulate: (inputs, changes) => request('/api/simulate', { method: 'POST', body: { inputs, changes } }),

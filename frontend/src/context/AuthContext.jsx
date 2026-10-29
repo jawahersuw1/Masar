@@ -1,36 +1,48 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { setApiUser, setUnauthorizedHandler } from '../lib/api.js';
+import { api, setApiToken, setUnauthorizedHandler } from '../lib/api.js';
 
-const KEY = 'masar.user';
+const KEY = 'masar.session';
 const AuthContext = createContext(null);
 
-function readStoredUser() {
+function readSession() {
   try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; }
 }
 
-// Demo sign-in: the backend identifies people by an id header (no password). See backend notes.
+// A real session: signing up or signing in gives { token, user }. The token is sent with every request.
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const stored = readStoredUser();
-    setApiUser(stored?.id ?? null);
+  const [session, setSession] = useState(() => {
+    localStorage.removeItem('masar.user'); // the old demo sign-in
+    const stored = readSession();
+    setApiToken(stored?.token ?? null);
     return stored;
   });
 
-  const login = useCallback((u) => {
-    setApiUser(u.id);
-    localStorage.setItem(KEY, JSON.stringify(u));
-    setUser(u);
+  const login = useCallback((s) => {
+    setApiToken(s.token);
+    localStorage.setItem(KEY, JSON.stringify(s));
+    setSession(s);
   }, []);
 
-  const logout = useCallback(() => {
-    setApiUser(null);
+  const clear = useCallback(() => {
+    setApiToken(null);
     localStorage.removeItem(KEY);
-    setUser(null);
+    setSession(null);
   }, []);
 
-  useEffect(() => { setUnauthorizedHandler(logout); }, [logout]);
+  const logout = useCallback(async () => {
+    try { await api.logout(); } catch { /* the session may already be over */ }
+    clear();
+  }, [clear]);
 
-  const value = useMemo(() => ({ user, login, logout }), [user, login, logout]);
+  // If the server says the session is over (401), sign out here too.
+  useEffect(() => { setUnauthorizedHandler(clear); }, [clear]);
+
+  // When the app opens with a saved session, ask the server once if it is still valid.
+  useEffect(() => {
+    if (readSession()?.token) api.me().catch(() => {});
+  }, []);
+
+  const value = useMemo(() => ({ user: session?.user ?? null, login, logout }), [session, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

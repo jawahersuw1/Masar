@@ -1,7 +1,8 @@
 // app.js - the API routes. createApp receives the repository, so tests can use a fake in-memory one.
 import express from "express";
 import cors from "cors";
-import { validateInputs, validateChanges } from "./validation.js";
+import { validateInputs, validateChanges, validateSignup, validateLogin } from "./validation.js";
+import { hashPassword, verifyPassword, verifyAgainstDummy, sha256, newToken, codeMatches, makeLimiter } from "./auth.js";
 import { analyzeApplication, toClientView, toBankView, CLIENT_NOTE, BANK_NOTE } from "./engine/analyze.js";
 import { runScenario } from "./engine/scenario.js";
 import { calcCompleteness } from "./engine/completeness.js";
@@ -14,13 +15,16 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
   app.use(cors({ origin: corsOrigin }));
   app.use(express.json({ limit: "100kb" }));
 
-  // ---- DEMO LOGIN: the browser sends x-user-id. This is NOT real security (see the report: future work). ----
+  // ---- who is calling? The browser sends "Authorization: Bearer <token>" (the token comes from signup or login). ----
   const auth = async (req, res, next) => {
-    const id = Number(req.header("x-user-id"));
-    if (!Number.isInteger(id) || id <= 0) return res.status(401).json({ error: "Login required (send the x-user-id header)" });
-    const user = await repo.getUser(id);
-    if (!user) return res.status(401).json({ error: "Unknown user" });
+    const header = req.header("authorization") ?? "";
+    const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+    if (!token) return res.status(401).json({ error: "Please sign in" });
+    const tokenHash = sha256(token);
+    const user = await repo.getUserBySession(tokenHash);
+    if (!user) return res.status(401).json({ error: "Your session has ended. Please sign in again" });
     req.user = user;
+    req.tokenHash = tokenHash;
     next();
   };
   const only = (role) => (req, res, next) =>
@@ -48,7 +52,56 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
     })));
   });
 
-  app.get("/api/users", async (req, res) => { res.json(await repo.listUsers()); });   // for the demo "Login as" list
+  // ---------- accounts: sign up and sign in (business owners and bank staff) ----------
+  const SESSION_DAYS = 7;
+  const loginLimiter = makeLimiter({ max: 10, windowMs: 15 * 60 * 1000 });   // 10 tries per 15 minutes per person
+  const signupLimiter = makeLimiter({ max: 10, windowMs: 60 * 60 * 1000 });  // 10 sign-ups per hour per address
+
+  async function startSession(user) {
+    const token = newToken();
+    await repo.createSession({ tokenHash: sha256(token), userId: user.id, days: SESSION_DAYS });
+    return { token, user };
+  }
+
+  app.post("/api/auth/signup", async (req, res) => {
+    if (!signupLimiter(req.ip)) return res.status(429).json({ error: "Too many sign-up attempts. Try again later." });
+    const banks = await repo.getBanks();
+    const v = validateSignup(req.body, banks.map((b) => b.bankId));
+    if (!v.ok) return res.status(400).json({ error: "Please fix the form", details: v.errors });
+    const { role, name, email, password, bankId, accessCode } = v.value;
+
+    // Bank staff must know their bank's secret staff code, so nobody can just claim to work at a bank.
+    if (role === "reviewer" && !codeMatches(accessCode, await repo.getBankCodeHash(bankId))) {
+      return res.status(403).json({ error: "That staff code is not correct for this bank" });
+    }
+    const user = await repo.createUser({ name, email, passwordHash: await hashPassword(password), role, bankId });
+    if (!user) return res.status(409).json({ error: "An account with this email already exists" });
+    res.status(201).json(await startSession(user));
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    const v = validateLogin(req.body);
+    if (!v.ok) return res.status(400).json({ error: v.errors[0] });
+    if (!loginLimiter(`${req.ip}|${v.value.email}`)) {
+      return res.status(429).json({ error: "Too many sign-in attempts. Try again in a few minutes." });
+    }
+    const found = await repo.getUserByEmail(v.value.email);
+    const ok = found
+      ? await verifyPassword(v.value.password, found.passwordHash)
+      : (await verifyAgainstDummy(v.value.password), false);          // same time whether or not the email exists
+    if (!ok) return res.status(401).json({ error: "Email or password is wrong" });
+
+    await repo.deleteExpiredSessions();
+    const { passwordHash: _hidden, ...user } = found;
+    res.json(await startSession(user));
+  });
+
+  app.get("/api/auth/me", auth, (req, res) => res.json({ user: req.user }));
+
+  app.post("/api/auth/logout", auth, async (req, res) => {
+    await repo.deleteSession(req.tokenHash);
+    res.json({ ok: true });
+  });
 
   // ---------- client ----------
   app.post("/api/analyze", auth, only("client"), async (req, res) => {

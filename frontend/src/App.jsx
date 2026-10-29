@@ -17,6 +17,7 @@ import Simulator from './pages/client/Simulator.jsx';
 import StressTestPage from './pages/client/StressTest.jsx';
 import Submit from './pages/client/Submit.jsx';
 import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 function Home() {
@@ -31,6 +32,7 @@ function Routed() {
     <AssessmentProvider key={user?.id ?? 'anon'} userId={user?.id}>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route path="/" element={<Home />} />
           <Route element={<RequireRole role="client" />}>
