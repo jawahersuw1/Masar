@@ -2,15 +2,15 @@ import "dotenv/config";
 import { createApp } from "./app.js";
 import { repo } from "./repo.js";
 import { loadConfigs } from "./configs.js";
-import { makeGeminiGenerator } from "./ai/gemini.js";
+import { makeOpenAIGenerator  } from "./ai/openai.js";
 import { makeExplainer } from "./ai/explain.js";
 
-const generate = makeGeminiGenerator({
-  apiKey: process.env.GEMINI_API_KEY,
-  model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
-  baseUrl: process.env.GEMINI_BASE_URL || undefined
+const generate = makeOpenAIGenerator({
+  apiKey: process.env.OPENAI_API_KEY,
+  model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+  baseUrl: process.env.OPENAI_BASE_URL || undefined
 });
-console.log(generate ? "AI layer: Gemini ON" : "AI layer: OFF (no GEMINI_API_KEY)");
+console.log(generate ? "AI layer: OpenAI ON" : "AI layer: OFF (no OPENAI_API_KEY)");
 
 const app = createApp({
   repo,
