@@ -36,6 +36,7 @@
     "maxTermYears": 7,
     "cashShareLimit": 0.5,
     "minBufferMonths": 3,
-    "steps": 10
+    "steps": 10,
+    "farDscr": 0.5
   }
 }

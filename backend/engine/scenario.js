@@ -165,6 +165,13 @@ export function makeMyPlanWork(inputs, config, bank = null) {
   const target = bank?.minDscr ?? opt.defaultTargetDscr;
   if (dscr0 >= target) return { status: "not_needed", label, target, baseline };
 
+  // Far from the target: a longer term and a little more owner money cannot close a gap this big.
+  // Most often the loan is too large for the profit, or a number was typed wrong (for example extra zeros).
+  // So we say that clearly instead of showing a useless "closest plan".
+  const farDscr = opt.farDscr ?? 0.5;
+  if (dscr0 < farDscr)
+    return { status: "too_far", label, target, farDscr, baseline };
+
   const maxTerm = Math.max(term0, bank?.maxTermYears ?? opt.maxTermYears);
   const cash = num(inputs.cash_on_hand);
   const cap = cash === null ? 0 : opt.cashShareLimit * cash;
