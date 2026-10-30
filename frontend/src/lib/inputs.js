@@ -66,3 +66,13 @@ export function formatAnswer(key, value, sectors = []) {
   if (field?.kind === 'percent') return pct(Number(value), 1);
   return `${int(value)} ${field?.unit ?? ''}`.trim();
 }
+// The saved answers (from the server) back into the strings the form shows. Percent fields show 10, not 0.1.
+export function fromApiInputs(inputs) {
+  const out = emptyAnswers();
+  for (const key of ANSWER_KEYS) {
+    const v = inputs?.[key];
+    if (v === null || v === undefined) continue;
+    out[key] = FIELD_BY_KEY[key].kind === 'percent' ? String(Number((Number(v) * 100).toFixed(4))) : String(v);
+  }
+  return out;
+}

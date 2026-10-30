@@ -9,7 +9,7 @@ import PlanFix from '../../components/analysis/PlanFix.jsx';
 import ReadinessHero from '../../components/analysis/ReadinessHero.jsx';
 import SimilarityPanel from '../../components/analysis/SimilarityPanel.jsx';
 import StressTests from '../../components/analysis/StressTests.jsx';
-import ActionHistory from '../../components/bank/ActionHistory.jsx';
+import { TimelineLoader } from '../../components/history/Timeline.jsx';
 import ApplicantAnswers from '../../components/bank/ApplicantAnswers.jsx';
 import DecisionPanel from '../../components/bank/DecisionPanel.jsx';
 
@@ -17,7 +17,7 @@ import DecisionPanel from '../../components/bank/DecisionPanel.jsx';
 import RiskPanel from '../../components/bank/RiskPanel.jsx';
 import RulesPanel from '../../components/bank/RulesPanel.jsx';
 import Button from '../../components/ui/Button.jsx';
-import Card from '../../components/ui/Card.jsx';
+import Card, { CardHeader } from '../../components/ui/Card.jsx';
 import { ErrorBlock, LoadingBlock, Notice } from '../../components/ui/Feedback.jsx';
 import Pill from '../../components/ui/Pill.jsx';
 import Tabs from '../../components/ui/Tabs.jsx';
@@ -55,6 +55,7 @@ export default function Review() {
         <div className="flex flex-wrap gap-2">
           <Button as={Link} to={`/bank/applications/${a.id}/report`} variant="outline" size="sm"><FileText className="h-4 w-4" aria-hidden="true" />Combined report</Button>
           {bank?.mandatoryReview && <Pill tone="bad">Mandatory review</Pill>}
+          <Pill tone="info">Round {a.revision}</Pill>
           <Pill tone={statusTone(a.status)}>{STATUS_LABEL[a.status] ?? a.status}</Pill>
         </div>
       </Card>
@@ -74,7 +75,7 @@ export default function Review() {
         </div>
         <aside className="flex flex-col gap-5 xl:sticky xl:top-24">
           <DecisionPanel application={a} mandatoryReview={Boolean(bank?.mandatoryReview)} onDone={app.run} />
-          <ActionHistory actions={a.actions} />
+          <Card><CardHeader title="History" description="Every round with the applicant, oldest first." /><TimelineLoader applicationId={a.id} audience="bank" version={`${a.status}-${a.revision}`} /></Card>
         </aside>
       </div>
     </div>

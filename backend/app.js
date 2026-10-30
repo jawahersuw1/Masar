@@ -6,9 +6,14 @@ import { hashPassword, verifyPassword, verifyAgainstDummy, sha256, newToken, cod
 import { analyzeApplication, toClientView, toBankView, CLIENT_NOTE, BANK_NOTE } from "./engine/analyze.js";
 import { runScenario } from "./engine/scenario.js";
 import { calcCompleteness } from "./engine/completeness.js";
+import { buildTimeline } from "./timeline.js";
 
 // A reviewer action and the status it leads to. Only these four can end a case, and only a human can call them.
-const ACTION_STATUS = { accept: "accepted", modify: "modified", decline: "declined", request_info: "more_info_requested" };
+const ACTION_STATUS = { accept: "accepted", modify: "changes_requested", decline: "declined" };
+
+const conflictMessage = (status) => status === "changes_requested"
+  ? "This application is waiting for the applicant to update it"
+  : `This application is already ${status}`;
 
 export function createApp({ repo, configs, explain, corsOrigin = true }) {
   const app = express();
@@ -158,9 +163,12 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
     }
     if (comment.length > 2000) return res.status(400).json({ error: "comment is too long (max 2000 characters)" });
 
+    if (application.status !== "submitted") return res.status(409).json({ error: conflictMessage(application.status) });
+
+    // The comment is the message the applicant will read, so changes and declines need a real one.
     const mandatory = application.results?.bank?.mandatoryReview === true;
-    if (action !== "accept" && comment.length < 3) {
-      return res.status(400).json({ error: "A comment is required for this action" });
+    if (action !== "accept" && comment.length < 10) {
+      return res.status(400).json({ error: "Write a message to the applicant (at least 10 characters)" });
     }
     if (action === "accept" && mandatory && comment.length < 10) {
       return res.status(400).json({ error: "This case needs mandatory review: write a comment (at least 10 characters) to accept it" });
@@ -169,7 +177,7 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
     const out = await repo.addReviewerAction({
       applicationId: id, bankId: application.bankId, reviewerId: req.user.id,
       action, comment, newStatus: ACTION_STATUS[action] });
-    if (out.conflict) return res.status(409).json({ error: `This application is already ${out.status}` });
+    if (out.conflict) return res.status(409).json({ error: conflictMessage(out.status) });
     res.json({ status: out.status });
   });
 
@@ -191,11 +199,51 @@ export function createApp({ repo, configs, explain, corsOrigin = true }) {
 
     if (req.user.role === "client") {
       if (application.clientUserId !== req.user.id) return res.status(403).json({ error: "Not your application" });
-      return res.json({ ...base, view: toClientView(application.results) });      // no reviewer comments
+      return res.json({ ...base, revision: application.revision, inputs: application.inputs, view: toClientView(application.results) });
     }
     if (application.bankId !== req.user.bankId) return res.status(403).json({ error: "This application belongs to another bank" });
-    res.json({ ...base, clientName: application.clientName, inputs: application.inputs, view: toBankView(application.results),
+    res.json({ ...base, revision: application.revision, clientName: application.clientName, inputs: application.inputs, view: toBankView(application.results),
       actions: await repo.listActions(id) });
+  });
+
+  // ---------- the applicant edits and sends again (only after the bank asked for changes) ----------
+  app.put("/api/applications/:id", auth, only("client"), async (req, res) => {
+    const id = parseId(req.params.id);
+    const application = id ? await repo.getApplication(id) : null;
+    if (!application) return res.status(404).json({ error: "Application not found" });
+    if (application.clientUserId !== req.user.id) return res.status(403).json({ error: "Not your application" });
+    if (application.status !== "changes_requested") {
+      return res.status(409).json({ error: "You can edit an application only after the bank asks for changes" });
+    }
+    const v = validateInputs(req.body?.inputs, await sectorIds());
+    if (!v.ok) return res.status(400).json({ error: "Invalid inputs", details: v.errors });
+    const completeness = calcCompleteness(v.inputs);
+    if (completeness.answered === 0) return res.status(400).json({ error: "Answer at least one question before sending" });
+
+    const bank = await repo.getBank(application.bankId);
+    const analysis = analyzeApplication({ inputs: v.inputs, bank, cases: await repo.getCases(), configs });
+    const out = await repo.reviseApplication({ applicationId: id, inputs: v.inputs, completeness: completeness.value, results: analysis });
+    if (out.conflict) return res.status(409).json({ error: conflictMessage(out.status) });
+    res.json({ applicationId: id, revision: out.revision, status: "submitted", view: toClientView(analysis) });
+  });
+
+  // ---------- the history of one application: every version and every bank decision, in order ----------
+  app.get("/api/applications/:id/timeline", auth, async (req, res) => {
+    const id = parseId(req.params.id);
+    const application = id ? await repo.getApplication(id) : null;
+    if (!application) return res.status(404).json({ error: "Application not found" });
+    const audience = req.user.role === "client" ? "client" : "bank";
+    const allowed = audience === "client" ? application.clientUserId === req.user.id : application.bankId === req.user.bankId;
+    if (!allowed) return res.status(403).json({ error: "Not allowed" });
+
+    const [revisions, actions, bank] = await Promise.all([repo.getRevisions(id), repo.listActions(id), repo.getBank(application.bankId)]);
+    const versions = revisions.length ? revisions
+      : [{ revision: 1, inputs: application.inputs, completenessPct: application.completenessPct, createdAt: application.createdAt }];
+    res.json({
+      status: application.status,
+      revision: application.revision,
+      events: buildTimeline({ revisions: versions, actions, audience, bankName: bank?.name ?? "The bank" })
+    });
   });
 
   // ---------- the AI layer: a written explanation of one application ----------

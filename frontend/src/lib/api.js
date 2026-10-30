@@ -41,6 +41,8 @@ export const api = {
   signup: (form) => request('/api/auth/signup', { method: 'POST', body: form }),
   login: (email, password) => request('/api/auth/login', { method: 'POST', body: { email, password } }),
   me: () => request('/api/auth/me'),
+  reviseApplication: (id, inputs) => request(`/api/applications/${id}`, { method: 'PUT', body: { inputs } }),
+  timeline: (id) => request(`/api/applications/${id}/timeline`),
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   // client
   analyze: (inputs) => request('/api/analyze', { method: 'POST', body: { inputs } }),

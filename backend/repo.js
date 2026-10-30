@@ -99,6 +99,9 @@ async function createApplication({ clientUserId, bankId, inputs, completeness, r
     await conn.query(
       `INSERT INTO application_inputs (application_id, ${columns}) VALUES (?, ${marks})`,
       [id, ...ANSWER_FIELDS.map((f) => inputs[f])]);
+    await conn.query(
+      "INSERT INTO application_revisions (application_id, revision, inputs_json, completeness_pct) VALUES (?, 1, ?, ?)",
+      [id, JSON.stringify(inputs), completeness]);
     await conn.commit();
     return id;
   } catch (e) {
@@ -112,7 +115,7 @@ async function createApplication({ clientUserId, bankId, inputs, completeness, r
 function applicationFromRow(a, inputsRow) {
   return {
     id: a.id, clientUserId: a.client_user_id, clientName: a.client_name, bankId: a.bank_id, status: a.status,
-    completenessPct: a.completeness_pct, createdAt: a.created_at, updatedAt: a.updated_at,
+    completenessPct: a.completeness_pct, revision: a.revision, createdAt: a.created_at, updatedAt: a.updated_at,
     results: a.results_json ? JSON.parse(a.results_json) : null,
     inputs: inputsFromRow(inputsRow)
   };
@@ -129,7 +132,7 @@ async function getApplication(id) {
 // The inbox list: one row per application, with a small summary taken from the saved analysis.
 async function listApplicationsForBank(bankId) {
   const [rows] = await pool.query(
-    `SELECT a.id, u.name AS client_name, a.status, a.completeness_pct, a.created_at, a.results_json,
+    `SELECT a.id, u.name AS client_name, a.status, a.revision, a.completeness_pct, a.created_at, a.results_json,
             i.loan_amount, s.name AS sector
      FROM applications a
      JOIN users u ON u.id = a.client_user_id
@@ -140,7 +143,7 @@ async function listApplicationsForBank(bankId) {
     const results = r.results_json ? JSON.parse(r.results_json) : null;
     const risk = results?.bank?.risk?.overall;
     return {
-      id: r.id, clientName: r.client_name, status: r.status, completenessPct: r.completeness_pct, createdAt: r.created_at,
+      id: r.id, clientName: r.client_name, status: r.status, revision: r.revision, completenessPct: r.completeness_pct, createdAt: r.created_at,
       sector: r.sector ?? null,
       loanAmount: r.loan_amount === null ? null : Number(r.loan_amount),
       mandatoryReview: results?.bank?.mandatoryReview === true,
@@ -152,25 +155,27 @@ async function listApplicationsForBank(bankId) {
 
 async function listApplicationsForClient(userId) {
   const [rows] = await pool.query(
-    `SELECT id, bank_id, status, completeness_pct, created_at
+    `SELECT id, bank_id, status, revision, completeness_pct, created_at
      FROM applications WHERE client_user_id = ? ORDER BY created_at DESC, id DESC`, [userId]);
-  return rows.map((r) => ({ id: r.id, bankId: r.bank_id, status: r.status,
+  return rows.map((r) => ({ id: r.id, bankId: r.bank_id, status: r.status, revision: r.revision,
     completenessPct: r.completeness_pct, createdAt: r.created_at }));
 }
 
-const FINAL = ["accepted", "modified", "declined"];
+const FINAL = ["accepted", "declined"];
 
 // Saves the audit row AND moves the status in ONE transaction. Locks the row so two reviewers cannot both decide.
+// The bank can act only while the application is waiting for the bank ("submitted").
+// The audit row and the new status are saved together, and the row is locked so two reviewers cannot both decide.
 async function addReviewerAction({ applicationId, bankId, reviewerId, action, comment, newStatus }) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [rows] = await conn.query("SELECT status FROM applications WHERE id = ? FOR UPDATE", [applicationId]);
+    const [rows] = await conn.query("SELECT status, revision FROM applications WHERE id = ? FOR UPDATE", [applicationId]);
     if (!rows[0]) { await conn.rollback(); return { notFound: true }; }
-    if (FINAL.includes(rows[0].status)) { await conn.rollback(); return { conflict: true, status: rows[0].status }; }
+    if (rows[0].status !== "submitted") { await conn.rollback(); return { conflict: true, status: rows[0].status }; }
     await conn.query(
-      "INSERT INTO reviewer_actions (application_id, bank_id, reviewer_id, action, comment) VALUES (?, ?, ?, ?, ?)",
-      [applicationId, bankId, reviewerId, action, comment || null]);
+      "INSERT INTO reviewer_actions (application_id, bank_id, reviewer_id, action, comment, revision) VALUES (?, ?, ?, ?, ?, ?)",
+      [applicationId, bankId, reviewerId, action, comment || null, rows[0].revision]);
     await conn.query("UPDATE applications SET status = ? WHERE id = ?", [newStatus, applicationId]);
     await conn.commit();
     return { ok: true, status: newStatus };
@@ -182,12 +187,49 @@ async function addReviewerAction({ applicationId, bankId, reviewerId, action, co
   }
 }
 
+// The applicant sends new answers after the bank asked for changes: a new round starts.
+async function reviseApplication({ applicationId, inputs, completeness, results }) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [rows] = await conn.query("SELECT status, revision FROM applications WHERE id = ? FOR UPDATE", [applicationId]);
+    if (!rows[0]) { await conn.rollback(); return { notFound: true }; }
+    if (rows[0].status !== "changes_requested") { await conn.rollback(); return { conflict: true, status: rows[0].status }; }
+    const revision = rows[0].revision + 1;
+    const sets = ANSWER_FIELDS.map((f) => `${f} = ?`).join(", ");        // trusted constant list
+    await conn.query(`UPDATE application_inputs SET ${sets} WHERE application_id = ?`,
+      [...ANSWER_FIELDS.map((f) => inputs[f]), applicationId]);
+    await conn.query(
+      "UPDATE applications SET results_json = ?, completeness_pct = ?, revision = ?, status = 'submitted' WHERE id = ?",
+      [JSON.stringify(results), completeness, revision, applicationId]);
+    await conn.query(
+      "INSERT INTO application_revisions (application_id, revision, inputs_json, completeness_pct) VALUES (?, ?, ?, ?)",
+      [applicationId, revision, JSON.stringify(inputs), completeness]);
+    await conn.query("DELETE FROM application_narratives WHERE application_id = ?", [applicationId]);   // the old AI text is out of date
+    await conn.commit();
+    return { ok: true, revision };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+async function getRevisions(applicationId) {
+  const [rows] = await pool.query(
+    "SELECT revision, inputs_json, completeness_pct, created_at FROM application_revisions WHERE application_id = ? ORDER BY revision",
+    [applicationId]);
+  return rows.map((r) => ({ revision: r.revision, inputs: JSON.parse(r.inputs_json),
+    completenessPct: r.completeness_pct, createdAt: r.created_at }));
+}
+
 async function listActions(applicationId) {
   const [rows] = await pool.query(
-    `SELECT a.id, a.action, a.comment, a.created_at, a.reviewer_id, u.name AS reviewer_name
+    `SELECT a.id, a.action, a.comment, a.revision, a.created_at, a.reviewer_id, u.name AS reviewer_name
      FROM reviewer_actions a JOIN users u ON u.id = a.reviewer_id
      WHERE a.application_id = ? ORDER BY a.id`, [applicationId]);
-  return rows.map((r) => ({ id: r.id, action: r.action, comment: r.comment, createdAt: r.created_at,
+  return rows.map((r) => ({ id: r.id, action: r.action, comment: r.comment, revision: r.revision, createdAt: r.created_at,
     reviewerId: r.reviewer_id, reviewerName: r.reviewer_name }));
 }
 
@@ -209,5 +251,5 @@ export const repo = {
   ping, getSectors, getBanks, getBank, getCases,
   getUserByEmail, createUser, getBankCodeHash, createSession, getUserBySession, deleteSession, deleteExpiredSessions,
   createApplication, getApplication, listApplicationsForBank, listApplicationsForClient,
-  addReviewerAction, listActions, getNarrative, saveNarrative
+  addReviewerAction, reviseApplication, getRevisions, listActions, getNarrative, saveNarrative
 };

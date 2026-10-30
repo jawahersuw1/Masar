@@ -69,6 +69,7 @@ export default function Inbox() {
                   <td className="p-3">
                     <Link to={`/bank/applications/${a.id}`} state={{ clientName: a.clientName }} onClick={(e) => e.stopPropagation()}
                       className="inline-flex items-center gap-1 font-bold text-heading underline underline-offset-2">#{a.id}<ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
+                    {a.revision > 1 && <div className="text-[11.5px] text-muted">Round {a.revision}</div>}
                   </td>
                   <td className="p-3"><div className="font-semibold">{a.clientName}</div><div className="text-[11.5px] text-muted">{a.sector ?? DASH}</div></td>
                   <td className="p-3 font-mono">{sar(a.loanAmount)}</td>

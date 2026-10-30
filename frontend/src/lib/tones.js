@@ -8,9 +8,9 @@ export const bandTone = by({ strong: 'good', moderate: 'warn', weak: 'bad' });  
 export const levelTone = by({ high: 'good', medium: 'warn', low: 'bad' });                // similarity, confidence
 export const riskTone = by({ low: 'good', medium: 'warn', high: 'bad' });                 // risk bands
 export const pressureTone = by({ low: 'good', moderate: 'warn', high: 'bad' });           // cash-flow pressure
-export const statusTone = by({ submitted: 'info', in_review: 'info', more_info_requested: 'warn', accepted: 'good', modified: 'warn', declined: 'bad' });
+export const statusTone = by({ submitted: 'info', in_review: 'info', changes_requested: 'warn', more_info_requested: 'warn', modified: 'warn', accepted: 'good', declined: 'bad' });
 export const outcomeTone = by({ repaid: 'good', late: 'warn', defaulted: 'bad' });
-export const actionTone = by({ accept: 'good', modify: 'warn', decline: 'bad', request_info: 'info' });
+export const actionTone = by({ accept: 'good', modify: 'warn', decline: 'bad', request_info: 'warn' });
 
 // Same cut-offs the backend uses for strengths (>=70) and concerns (<40).
 export const componentTone = (s) => (s >= 70 ? 'good' : s < 40 ? 'bad' : 'warn');

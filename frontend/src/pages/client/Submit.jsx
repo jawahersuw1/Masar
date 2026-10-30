@@ -21,7 +21,7 @@ const within = (v, lo, hi) => (v === null ? null : v >= lo && v <= hi);
 
 export default function Submit() {
   const navigate = useNavigate();
-  const { answers, answered } = useAssessment();
+  const { answers, answered, editing } = useAssessment();
   const banks = useAsync(() => api.banks(), []);
   const [bankId, setBankId] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -40,6 +40,11 @@ export default function Submit() {
 
   return (
     <div className="flex flex-col gap-5">
+      {editing && (
+        <Notice variant="strong">
+          You are editing application #{editing.applicationId}. To send your changes, use <Link to="/assessment" className="font-bold underline">Send changes to the bank</Link> on the questionnaire. Sending from this page would create a second application.
+        </Notice>
+      )}
       <Card>
         <CardHeader title="Choose a bank" description="Each bank has its own limits and reviews applications its own way. Your answers are sent as they are now." />
         {banks.loading && <LoadingBlock label="Loading banks" rows={2} />}

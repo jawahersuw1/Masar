@@ -22,13 +22,14 @@ export function formatDate(iso, withTime = true) {
 export const STATUS_LABEL = {
   submitted: 'Submitted',
   in_review: 'In review',
-  more_info_requested: 'More information requested',
+  changes_requested: 'Changes requested',
   accepted: 'Accepted',
-  modified: 'Modified',
   declined: 'Declined',
+  more_info_requested: 'Changes requested', // old value, kept so old data still shows
+  modified: 'Changes requested',            // old value, kept so old data still shows
 };
-export const FINAL_STATUSES = ['accepted', 'modified', 'declined'];
-export const ACTION_LABEL = { accept: 'Accepted', modify: 'Modified', decline: 'Declined', request_info: 'Asked for more information' };
+export const FINAL_STATUSES = ['accepted', 'declined'];
+export const ACTION_LABEL = { accept: 'Accepted', modify: 'Asked for changes', decline: 'Declined', request_info: 'Asked for changes' };
 
 // Friendly names for the keys the engine uses.
 export const METRIC_LABELS = {
